@@ -21,6 +21,7 @@ exports.postAddProduct = async (req, res, next) => {
       price: price,
       description: description,
       imageUrl: imageUrl,
+      userId: req.user._id,
     });
     await product.save();
 
@@ -74,16 +75,21 @@ exports.postEditProduct = async (req, res, next) => {
   res.redirect("/admin/products");
 };
 
-exports.getProducts = (req, res, next) => {
-  Product.find() //provided by mongoose
-    .then((products) => {
-      res.render("admin/products", {
-        prods: products,
-        pageTitle: "Admin Products",
-        path: "/admin/products",
-      });
-    })
-    .catch((err) => console.log(err));
+exports.getProducts = async (req, res, next) => {
+  try {
+    const products = await Product.find() //method provided by mongoose to bring all data.
+      // .select("title imageUrl -_id")
+      .populate("userId");
+
+    console.log(products);
+    res.render("admin/products", {
+      prods: products,
+      pageTitle: "Admin Products",
+      path: "/admin/products",
+    });
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 exports.postDeleteProduct = async (req, res, next) => {
