@@ -1,4 +1,5 @@
 const Product = require("../models/product");
+const Order = require("../models/order");
 
 exports.getProducts = async (req, res, next) => {
   const products = await Product.find(); //method provided by mongoose
@@ -43,7 +44,7 @@ exports.getIndex = (req, res, next) => {
 
 exports.getCart = async (req, res, next) => {
   const user = await req.user.populate("cart.items.productId").execPopulate();
-  console.log(user.cart.items);
+  // console.log(user.cart.items);
 
   const products = user.cart.items;
   res.render("shop/cart", {
@@ -65,31 +66,40 @@ exports.postCart = (req, res, next) => {
     });
 };
 
-exports.postCartDeleteProduct = async(req, res, next) => {
+exports.postCartDeleteProduct = async (req, res, next) => {
   const prodId = req.body.productId;
   await req.user.deleteItemFromCart(prodId);
   res.redirect("/cart");
 };
 
-exports.postOrder = (req, res, next) => {
-  let fetchedCart;
-  req.user
-    .addOrder()
-    .then((result) => {
-      res.redirect("/orders");
-    })
-    .catch((err) => console.log(err));
+exports.postOrder = async (req, res, next) => {
+  const user = await req.user.populate("cart.items.productId").execPopulate();
+  // console.log(user.cart.items);
+
+  const products = await user.cart.items.map((i) => {
+    return { quantity: i.quantity, product: { ...i.productId._doc } };
+  });
+  const order = new Order({
+    user: {
+      name: req.user.name,
+      userId: req.user._id,
+    },
+    products: products,
+  });
+
+  await order.save();
+
+  await req.user.clearCart();
+
+  res.redirect("/orders");
 };
 
-exports.getOrders = (req, res, next) => {
-  req.user
-    .getOrders()
-    .then((orders) => {
-      res.render("shop/orders", {
-        path: "/orders",
-        pageTitle: "Your Orders",
-        orders: orders,
-      });
-    })
-    .catch((err) => console.log(err));
+exports.getOrders = async (req, res, next) => {
+  const orders = await Order.find({ "user.userId": req.user._id });
+
+  res.render("shop/orders", {
+    path: "/orders",
+    pageTitle: "Your Orders",
+    orders: orders,
+  });
 };
