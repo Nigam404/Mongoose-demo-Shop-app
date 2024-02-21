@@ -16,7 +16,7 @@ exports.getProduct = async (req, res, next) => {
 
     const product = await Product.findById(prodId);
 
-    console.log("AAAAAAAAAAA", product);
+    // console.log("AAAAAAAAAAA", product);
     res.render("shop/product-detail", {
       product: product,
       pageTitle: product.title,
@@ -41,17 +41,17 @@ exports.getIndex = (req, res, next) => {
     });
 };
 
-exports.getCart = (req, res, next) => {
-  req.user
-    .getCart()
-    .then((products) => {
-      res.render("shop/cart", {
-        path: "/cart",
-        pageTitle: "Your Cart",
-        products: products,
-      });
-    })
-    .catch((err) => console.log(err));
+exports.getCart = async (req, res, next) => {
+  const user = await req.user.populate("cart.items.productId").execPopulate();
+  console.log(user.cart.items);
+  
+  const products = user.cart.items;
+  res.render("shop/cart", {
+    path: "/cart",
+    pageTitle: "Your Cart",
+    products: products,
+  });
+  
 };
 
 exports.postCart = (req, res, next) => {
@@ -61,7 +61,7 @@ exports.postCart = (req, res, next) => {
       return req.user.addToCart(product);
     })
     .then((result) => {
-      console.log(result);
+      // console.log(result);
       res.redirect("/cart");
     });
 };
