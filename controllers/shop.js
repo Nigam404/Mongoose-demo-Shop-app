@@ -44,14 +44,13 @@ exports.getIndex = (req, res, next) => {
 exports.getCart = async (req, res, next) => {
   const user = await req.user.populate("cart.items.productId").execPopulate();
   console.log(user.cart.items);
-  
+
   const products = user.cart.items;
   res.render("shop/cart", {
     path: "/cart",
     pageTitle: "Your Cart",
     products: products,
   });
-  
 };
 
 exports.postCart = (req, res, next) => {
@@ -66,14 +65,10 @@ exports.postCart = (req, res, next) => {
     });
 };
 
-exports.postCartDeleteProduct = (req, res, next) => {
+exports.postCartDeleteProduct = async(req, res, next) => {
   const prodId = req.body.productId;
-  req.user
-    .deleteItemFromCart(prodId)
-    .then((result) => {
-      res.redirect("/cart");
-    })
-    .catch((err) => console.log(err));
+  await req.user.deleteItemFromCart(prodId);
+  res.redirect("/cart");
 };
 
 exports.postOrder = (req, res, next) => {
